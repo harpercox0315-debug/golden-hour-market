@@ -1,135 +1,151 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Golden Hour Market</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-body {margin:0; font-family:'Inter',sans-serif; background:linear-gradient(to bottom,#ff9966,#ff5e62,#8e2de2); color:white;}
-.container {max-width:1100px; margin:auto; padding:40px 20px;}
-h1 {font-weight:500; text-align:center; margin-bottom:30px;}
-.search-bar {display:flex; gap:10px; margin-bottom:30px;}
-.search-bar input, .search-bar select {flex:1; padding:12px; border-radius:30px; border:none; outline:none; font-size:14px;}
-.grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:25px;}
-.card {background:rgba(255,255,255,0.15); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.25); border-radius:25px; overflow:hidden; position:relative; transition:0.2s;}
-.card:hover {transform:translateY(-4px);}
-.card img {width:100%; height:220px; object-fit:cover;}
-.card-body {padding:20px;}
-.price {font-weight:600; font-size:18px; margin-top:5px;}
-.seller {font-size:13px; opacity:0.8;}
-.button {margin-top:15px; padding:10px 18px; border-radius:30px; border:none; background:white; color:black; font-weight:500; cursor:pointer; font-size:14px;}
-.button:hover {opacity:0.9;}
-.heart {position:absolute; top:15px; right:15px; font-size:22px; cursor:pointer;}
-.heart.active {color:red;}
-.modal {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center;}
-.modal-content {background:white; color:black; padding:30px; border-radius:25px; width:400px;}
-</style>
-</head>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="app.js"></script>
-<body>
-<div class="container">
-<h1>Golden Hour Market 🌅</h1>
+// --- Config ---
+const API_BASE = "http://localhost:5000/api"; // Replace with your deployed backend URL
+let currentUser = null;
 
-<div class="search-bar">
-  <input type="text" id="searchInput" placeholder="Search items...">
-  <select id="sortSelect">
-    <option value="default">Sort</option>
-    <option value="low">Price: Low to High</option>
-    <option value="high">Price: High to Low</option>
-  </select>
-</div>
+// --- User Signup / Login ---
+async function signup(username){
+  const res = await fetch(`${API_BASE}/users`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({username})
+  });
+  const data = await res.json();
+  currentUser = { username, uid: data.uid };
+  alert(`Logged in as ${username}`);
+}
 
-<div style="margin-bottom:30px; border-radius:25px; background:rgba(255,255,255,0.15); padding:20px;">
-  <h3>Post New Item</h3>
-  <input id="itemName" placeholder="Item Name"><br>
-  <textarea id="itemDesc" placeholder="Description"></textarea><br>
-  <input type="number" id="itemPrice" placeholder="Price"><br>
-  <input type="text" id="itemImg" placeholder="Image URL"><br>
-  <button class="button" onclick="postItem()">Post Item</button>
-</div>
+// --- Load Marketplace ---
+async function loadItems(){
+  const res = await fetch(`${API_BASE}/items`);
+  const items = await res.json();
+  const container = document.getElementById("browseList");
+  container.innerHTML = "";
 
-<div class="grid" id="itemGrid"></div>
-</div>
-
-<div class="modal" id="paymentModal">
-  <div class="modal-content">
-    <h3>Payment Successful</h3>
-    <p>Item marked as sold.</p>
-    <button class="button" onclick="closeModal()">Close</button>
-  </div>
-</div>
-
-<script>
-let currentUser = prompt("Choose your username:");
-let wishlist = [];
-let trades = [];
-
-function renderItems(){
-  const grid = document.getElementById("itemGrid");
-  grid.innerHTML="";
-  let search = document.getElementById("searchInput").value.toLowerCase();
-  let sort = document.getElementById("sortSelect").value;
-
-  let filtered = trades.filter(item => item.name.toLowerCase().includes(search));
-  if(sort==="low") filtered.sort((a,b)=>a.price-b.price);
-  if(sort==="high") filtered.sort((a,b)=>b.price-a.price);
-
-  filtered.forEach((item,index)=>{
-    grid.innerHTML+=`
-    <div class="card">
-      <div class="heart ${wishlist.includes(index)?"active":""}" onclick="toggleWishlist(${index})">♥</div>
-      <img src="${item.img || 'https://picsum.photos/400/300?random='+index}">
-      <div class="card-body">
-        <h3>${item.name}</h3>
-        <div>${item.desc}</div>
-        <div class="price">$${item.price}</div>
-        <div class="seller">Seller: ${item.seller}</div>
-        <button class="button" onclick="buyItem(${index})">Buy</button>
-      </div>
-    </div>`;
+  items.forEach(item=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <p>✨ ${item.name}</p>
+      <p>${item.desc}</p>
+      <p>Price: $${item.price}</p>
+      <p>Status: ${item.status}</p>
+      <p>Seller: ${item.sellerID}</p>
+      <div id="images-${item._id}"></div>
+      <button onclick="buyItem('${item._id}')">Buy</button>
+      <button onclick="openChat('${item._id}')">Chat</button>
+      <button onclick="addWishlist('${item._id}')">Wishlist</button>
+    `;
+    // Add images
+    const imgDiv = card.querySelector(`#images-${item._id}`);
+    item.images.forEach(src=>{
+      const img = document.createElement("img");
+      img.src = src;
+      img.style.width="80px";
+      img.style.marginRight="5px";
+      imgDiv.appendChild(img);
+    });
+    container.appendChild(card);
   });
 }
 
-function toggleWishlist(index){
-  if(wishlist.includes(index)) wishlist = wishlist.filter(i=>i!==index);
-  else wishlist.push(index);
-  renderItems();
-}
-
-function postItem(){
-  let name = document.getElementById("itemName").value;
-  let desc = document.getElementById("itemDesc").value;
-  let price = parseFloat(document.getElementById("itemPrice").value);
-  let img = document.getElementById("itemImg").value;
-
-  if(!name||!desc||!price){alert("Fill all fields"); return;}
-
-  trades.push({
-    name, desc, price, img,
-    seller:currentUser,
-    status:"available"
+// --- Post Item ---
+async function postItem(name, desc, price, images){
+  if(!currentUser) return alert("Sign in first!");
+  const res = await fetch(`${API_BASE}/items`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ name, desc, price, images, sellerID:currentUser.uid })
   });
-  renderItems();
+  const data = await res.json();
+  alert("Item posted!");
+  loadItems();
 }
 
-function buyItem(index){
-  trades[index].status="sold";
-  document.getElementById("paymentModal").style.display="flex";
+// --- Buy Item ---
+async function buyItem(itemID){
+  if(!currentUser) return alert("Sign in first!");
+  const res = await fetch(`${API_BASE}/items/${itemID}/buy`, { method:"POST" });
+  const data = await res.json();
+  alert(data.message);
+  loadItems();
 }
 
-function closeModal(){
-  document.getElementById("paymentModal").style.display="none";
+// --- Chat ---
+async function openChat(itemID){
+  const chatDiv = document.getElementById("chatDiv");
+  chatDiv.innerHTML = `<h3>Chat for item ${itemID}</h3>`;
+  const input = document.createElement("input");
+  input.placeholder = "Type message...";
+  const sendBtn = document.createElement("button");
+  sendBtn.innerText = "Send";
+  sendBtn.onclick = async ()=>{
+    const text = input.value;
+    if(!text) return;
+    await fetch(`${API_BASE}/items/${itemID}/chat`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ userID: currentUser.uid, text })
+    });
+    input.value="";
+    loadChat(itemID);
+  };
+  chatDiv.appendChild(input);
+  chatDiv.appendChild(sendBtn);
+  loadChat(itemID);
 }
 
-document.getElementById("searchInput").addEventListener("input",renderItems);
-document.getElementById("sortSelect").addEventListener("change",renderItems);
+async function loadChat(itemID){
+  const res = await fetch(`${API_BASE}/items/${itemID}/chat`);
+  const messages = await res.json();
+  const chatDiv = document.getElementById("chatDiv");
+  const msgList = document.createElement("div");
+  msgList.innerHTML = "";
+  messages.forEach(msg=>{
+    const p = document.createElement("p");
+    p.innerText = `${msg.userID}: ${msg.text}`;
+    msgList.appendChild(p);
+  });
+  chatDiv.appendChild(msgList);
+}
 
-renderItems();
-</script>
-</body>
-</html>
+// --- Wishlist ---
+async function addWishlist(itemID){
+  if(!currentUser) return alert("Sign in first!");
+  const res = await fetch(`${API_BASE}/users/${currentUser.uid}/wishlist`, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ itemID })
+  });
+  const data = await res.json();
+  alert("Added to wishlist!");
+}
 
-        
-   
+// --- Meetup ---
+async function setMeetup(itemID, lat, lng){
+  const res = await fetch(`${API_BASE}/items/${itemID}/meetup`, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ lat, lng })
+  });
+  const data = await res.json();
+  alert("Meetup set!");
+}
+
+// --- Accept / Decline Trade ---
+async function respondTrade(itemID, action){
+  const res = await fetch(`${API_BASE}/items/${itemID}/trade`, {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ action })
+  });
+  const data = await res.json();
+  alert(data.message);
+  loadItems();
+}
+
+// --- Initialize ---
+document.addEventListener("DOMContentLoaded", ()=>{
+  const username = prompt("Enter your username to sign in:");
+  signup(username);
+  loadItems();
+});
