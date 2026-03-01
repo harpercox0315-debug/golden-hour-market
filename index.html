@@ -1,242 +1,133 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Golden Hour Market</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-body {margin:0;font-family:Arial,sans-serif;background:linear-gradient(to bottom,#ff9966,#ff5e62,#8e2de2);color:white;transition:background 2s;}
-.sidebar {height:100%; width:250px; position:fixed; top:0; left:-250px; background:rgba(255,255,255,0.1); backdrop-filter:blur(12px); padding-top:60px; transition:0.3s; z-index:1000;}
-.sidebar a {padding:15px 25px; text-decoration:none; font-size:18px; color:white; display:block; transition:0.2s;}
-.sidebar a:hover {background:rgba(255,255,255,0.2); border-radius:8px;}
-.open-btn {font-size:30px; cursor:pointer; padding:15px; position:fixed; top:10px; left:10px; z-index:1100;}
-.main {padding:40px; transition:0.3s;}
-.card {background:rgba(255,255,255,0.15); padding:20px; border-radius:15px; backdrop-filter:blur(10px); margin-top:20px;}
-.button {background:rgba(255,255,255,0.2); border:none; padding:10px 15px; border-radius:8px; margin-top:10px; color:white; cursor:pointer; transition:0.2s;}
-.button:hover {background:rgba(255,255,255,0.35);}
-input, textarea, select {width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:10px;}
-.star {color: gold; margin-right: 2px;}
-.sold {opacity:0.5;}
-#notifContainer {position:fixed; top:20px; right:20px; width:320px; z-index:9999;}
-.notif {display:flex; align-items:center; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-radius:50px; padding:12px 20px; margin-bottom:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2); font-size:14px; color:#111; animation:slideIn 0.4s forwards;}
-.notif .icon {width:36px;height:36px;border-radius:50%; background:#00cc66; display:flex;align-items:center;justify-content:center; color:white;font-weight:bold;margin-right:15px;}
-@keyframes slideIn {from {transform:translateX(120%);opacity:0;} to {transform:translateX(0);opacity:1;}}
-@keyframes slideOut {from {transform:translateX(0);opacity:1;} to {transform:translateX(120%);opacity:0;}}
-.chat-box {background:rgba(255,255,255,0.1);padding:10px;border-radius:12px;max-height:300px;overflow-y:auto;margin-top:10px; display:flex; flex-direction: column;}
-.chat-message {margin-bottom:10px;padding:6px 12px;border-radius:10px;display:inline-block;max-width:80%;}
-.chat-message.me {background:#ff9966;color:#111;align-self:flex-end;}
-.chat-message.other {background:#ff5e62;color:#fff;align-self:flex-start;}
-#chatInput {display:flex;gap:10px;margin-top:10px;}
-#chatInput input {flex:1;}
+body {margin:0; font-family:'Inter',sans-serif; background:linear-gradient(to bottom,#ff9966,#ff5e62,#8e2de2); color:white;}
+.container {max-width:1100px; margin:auto; padding:40px 20px;}
+h1 {font-weight:500; text-align:center; margin-bottom:30px;}
+.search-bar {display:flex; gap:10px; margin-bottom:30px;}
+.search-bar input, .search-bar select {flex:1; padding:12px; border-radius:30px; border:none; outline:none; font-size:14px;}
+.grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:25px;}
+.card {background:rgba(255,255,255,0.15); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.25); border-radius:25px; overflow:hidden; position:relative; transition:0.2s;}
+.card:hover {transform:translateY(-4px);}
+.card img {width:100%; height:220px; object-fit:cover;}
+.card-body {padding:20px;}
+.price {font-weight:600; font-size:18px; margin-top:5px;}
+.seller {font-size:13px; opacity:0.8;}
+.button {margin-top:15px; padding:10px 18px; border-radius:30px; border:none; background:white; color:black; font-weight:500; cursor:pointer; font-size:14px;}
+.button:hover {opacity:0.9;}
+.heart {position:absolute; top:15px; right:15px; font-size:22px; cursor:pointer;}
+.heart.active {color:red;}
+.modal {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center;}
+.modal-content {background:white; color:black; padding:30px; border-radius:25px; width:400px;}
 </style>
 </head>
+  <script src="app.js"></script>
 <body>
+<div class="container">
+<h1>Golden Hour Market 🌅</h1>
 
-<div class="open-btn" id="sidebarToggle">☰</div>
-
-<div id="mySidebar" class="sidebar">
-  <a href="#" data-page="home">🏠 Home</a>
-  <a href="#" data-page="browse">🔍 Browse</a>
-  <a href="#" data-page="post">➕ Post Item</a>
-  <a href="#" data-page="selling">💰 Selling</a>
-  <a href="#" data-page="messages">💬 Messages</a>
-  <a href="#" data-page="history">📜 History</a>
-  <a href="#" data-page="profile">👤 Profile</a>
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search items...">
+  <select id="sortSelect">
+    <option value="default">Sort</option>
+    <option value="low">Price: Low to High</option>
+    <option value="high">Price: High to Low</option>
+  </select>
 </div>
 
-<div class="main" id="content">
-  <h1>Golden Hour Market</h1>
-  <div class="card"><p>Trade or buy items during the golden hour 🌅</p></div>
+<div style="margin-bottom:30px; border-radius:25px; background:rgba(255,255,255,0.15); padding:20px;">
+  <h3>Post New Item</h3>
+  <input id="itemName" placeholder="Item Name"><br>
+  <textarea id="itemDesc" placeholder="Description"></textarea><br>
+  <input type="number" id="itemPrice" placeholder="Price"><br>
+  <input type="text" id="itemImg" placeholder="Image URL"><br>
+  <button class="button" onclick="postItem()">Post Item</button>
 </div>
 
-<div id="notifContainer"></div>
+<div class="grid" id="itemGrid"></div>
+</div>
+
+<div class="modal" id="paymentModal">
+  <div class="modal-content">
+    <h3>Payment Successful</h3>
+    <p>Item marked as sold.</p>
+    <button class="button" onclick="closeModal()">Close</button>
+  </div>
+</div>
 
 <script>
-// ===== DATA STORAGE =====
+let currentUser = prompt("Choose your username:");
+let wishlist = [];
 let trades = [];
-let messages = [];
-let currentUser = null;
-let ageVerified = false;
 
-// ===== PROMPT USERNAME =====
-while(!currentUser){
-  let username = prompt("Choose your username:");
-  if(username && username.trim()!=="") currentUser=username.trim();
-}
-showNotification(`Welcome, ${currentUser}!`);
+function renderItems(){
+  const grid = document.getElementById("itemGrid");
+  grid.innerHTML="";
+  let search = document.getElementById("searchInput").value.toLowerCase();
+  let sort = document.getElementById("sortSelect").value;
 
-// ===== NOTIFICATIONS =====
-function showNotification(msg){
-  const container=document.getElementById("notifContainer");
-  const notif=document.createElement("div");
-  notif.className="notif";
-  notif.innerHTML=`<div class="icon">✓</div><div>${msg}</div>`;
-  container.appendChild(notif);
-  setTimeout(()=>{
-    notif.style.animation="slideOut 0.4s forwards";
-    setTimeout(()=>container.removeChild(notif),400);
-  },4000);
-}
+  let filtered = trades.filter(item => item.name.toLowerCase().includes(search));
+  if(sort==="low") filtered.sort((a,b)=>a.price-b.price);
+  if(sort==="high") filtered.sort((a,b)=>b.price-a.price);
 
-// ===== AGE VERIFICATION =====
-function verifyAge(){
-  if(!ageVerified){
-    let age=prompt("Enter your age:");
-    if(age<13){ alert("⚠ Parental permission required"); return false; }
-    ageVerified=true;
-    showNotification("✅ Age verified!");
-  }
-  return true;
-}
-
-// ===== SIDEBAR =====
-document.addEventListener("DOMContentLoaded", ()=>{
-  const sidebar=document.getElementById("mySidebar");
-  const toggleBtn=document.getElementById("sidebarToggle");
-
-  toggleBtn.addEventListener("click", ()=>{
-    sidebar.style.left = (sidebar.style.left==="0px") ? "-250px" : "0px";
+  filtered.forEach((item,index)=>{
+    grid.innerHTML+=`
+    <div class="card">
+      <div class="heart ${wishlist.includes(index)?"active":""}" onclick="toggleWishlist(${index})">♥</div>
+      <img src="${item.img || 'https://picsum.photos/400/300?random='+index}">
+      <div class="card-body">
+        <h3>${item.name}</h3>
+        <div>${item.desc}</div>
+        <div class="price">$${item.price}</div>
+        <div class="seller">Seller: ${item.seller}</div>
+        <button class="button" onclick="buyItem(${index})">Buy</button>
+      </div>
+    </div>`;
   });
+}
 
-  document.querySelectorAll('#mySidebar a').forEach(link=>{
-    link.addEventListener('click', e=>{
-      e.preventDefault();
-      loadPage(link.getAttribute('data-page'));
-    });
-  });
-});
+function toggleWishlist(index){
+  if(wishlist.includes(index)) wishlist = wishlist.filter(i=>i!==index);
+  else wishlist.push(index);
+  renderItems();
+}
 
-// ===== POST ITEM =====
 function postItem(){
-  if(!verifyAge()) return;
-  const name=document.getElementById("itemName").value.trim();
-  const desc=document.getElementById("itemDesc").value.trim();
-  const price=document.getElementById("itemPrice").value.trim();
-  const type=document.getElementById("tradeType").value;
-  if(!name || !desc || !price){ alert("Fill all fields"); return; }
-  trades.push({name,desc,price,owner:currentUser,type,status:"available",reviews:[]});
-  showNotification(`Item posted: ${name}`);
-  loadPage('selling');
-}
+  let name = document.getElementById("itemName").value;
+  let desc = document.getElementById("itemDesc").value;
+  let price = parseFloat(document.getElementById("itemPrice").value);
+  let img = document.getElementById("itemImg").value;
 
-// ===== BUY ITEM =====
-function buyItem(index){
-  if(!verifyAge()) return;
-  const item=trades[index];
-  if(item.owner===currentUser){ alert("You cannot buy your own item."); return; }
-  if(item.status==="sold"){ alert("Item already sold."); return; }
-  if(confirm(`Buy ${item.name} for $${item.price}?`)){
-    item.status="sold";
-    messages.push({from:currentUser,to:item.owner,itemName:item.name,status:"Purchased"});
-    showNotification(`Purchased: ${item.name}`);
-    loadPage('browse');
-  }
-}
+  if(!name||!desc||!price){alert("Fill all fields"); return;}
 
-// ===== SEND CHAT =====
-function sendChat(){
-  const msg=document.getElementById("chatMsg").value.trim();
-  if(!msg) return;
-  messages.push({from:currentUser,to:"all",text:msg,status:"Sent"});
-  document.getElementById("chatMsg").value="";
-  renderMessages();
-}
-
-// ===== RENDER CHAT =====
-function renderMessages(){
-  const box=document.getElementById("chatBox");
-  box.innerHTML="";
-  messages.forEach(msg=>{
-    const div=document.createElement("div");
-    div.className="chat-message "+(msg.from===currentUser?"me":"other");
-    div.textContent=msg.text || msg.itemName || "";
-    box.appendChild(div);
+  trades.push({
+    name, desc, price, img,
+    seller:currentUser,
+    status:"available"
   });
+  renderItems();
 }
 
-// ===== LOAD PAGES =====
-function loadPage(page){
-  const content=document.getElementById("content");
-  if(page==='home'){
-    content.innerHTML=`<h1>Golden Hour Market</h1><div class="card"><p>Trade or buy items during the golden hour 🌅</p></div>`;
-  }
-
-  if(page==='browse'){
-    content.innerHTML=`<h1>Browse Marketplace</h1>
-    <label>Filter: <select id="filterType"><option value="">All</option><option value="Buy">Buy</option><option value="Trade">Trade</option></select></label>
-    <div id="browseList"></div>`;
-    function renderList(){
-      const fType=document.getElementById("filterType").value;
-      let html="";
-      trades.forEach((t,i)=>{
-        if(t.owner!==currentUser && t.status==="available" && (!fType||t.type===fType)){
-          html+=`<div class="card">
-            <p>✨ ${t.name}</p>
-            <p>${t.desc}</p>
-            <p>Price: $${t.price}</p>
-            <p>Type: ${t.type}</p>
-            <button class="button" onclick="buyItem(${i})">Buy/Trade</button>
-          </div>`;
-        }
-      });
-      document.getElementById("browseList").innerHTML=html||`<div class="card"><p>No items available.</p></div>`;
-    }
-    renderList();
-    document.getElementById("filterType").addEventListener("change",renderList);
-  }
-
-  if(page==='post'){
-    content.innerHTML=`<h1>Post Item</h1>
-      <div class="card">
-        <input id="itemName" placeholder="Item Name">
-        <textarea id="itemDesc" placeholder="Description"></textarea>
-        <input type="number" id="itemPrice" placeholder="Price ($)">
-        <select id="tradeType"><option value="Buy">Buy</option><option value="Trade">Trade</option></select>
-        <button class="button" onclick="postItem()">Post Item</button>
-      </div>`;
-  }
-
-  if(page==='selling'){
-    content.innerHTML=`<h1>Your Listings</h1><div id="sellingList"></div>`;
-    let html="";
-    trades.forEach((t,i)=>{
-      if(t.owner===currentUser){
-        html+=`<div class="card ${t.status==="sold"?"sold":""}">
-          ${t.name} - $${t.price} - ${t.type} - ${t.status}
-        </div>`;
-      }
-    });
-    document.getElementById("sellingList").innerHTML=html||`<div class="card"><p>No listings yet</p></div>`;
-  }
-
-  if(page==='messages'){
-    content.innerHTML=`<h1>Messages & Chat</h1><div id="chatBox" class="chat-box"></div>
-      <div id="chatInput"><input id="chatMsg" placeholder="Type message"><button onclick="sendChat()">Send</button></div>`;
-    renderMessages();
-  }
-
-  if(page==='history'){
-    content.innerHTML=`<h1>History</h1>`;
-    let html="";
-    messages.forEach(msg=>{
-      if(msg.from===currentUser || msg.to===currentUser){
-        html+=`<div class="card">
-          From: ${msg.from} | To: ${msg.to} | ${msg.text || msg.itemName} | Status: ${msg.status}
-        </div>`;
-      }
-    });
-    content.innerHTML+=html||`<div class="card"><p>No history yet</p></div>`;
-  }
-
-  if(page==='profile'){
-    const count=trades.filter(t=>t.owner===currentUser).length;
-    content.innerHTML=`<h1>Profile</h1><div class="card">Username: ${currentUser}<br>Items posted: ${count}</div>`;
-  }
-
-  // Close sidebar after navigation
-  document.getElementById("mySidebar").style.left="-250px";
+function buyItem(index){
+  trades[index].status="sold";
+  document.getElementById("paymentModal").style.display="flex";
 }
+
+function closeModal(){
+  document.getElementById("paymentModal").style.display="none";
+}
+
+document.getElementById("searchInput").addEventListener("input",renderItems);
+document.getElementById("sortSelect").addEventListener("change",renderItems);
+
+renderItems();
 </script>
-
 </body>
 </html>
+
+        
+   
